@@ -12,9 +12,9 @@ predictor = dlib.shape_predictor('shape_predictor_68_face_landmarks.dat') # 68�
 # 关键点检测
 def get_landmarks(im):
     print('start get_landmarks')
-    rects = cascade.detectMultiScale(im, scaleFactor=1.2, minNeighbors=5) # 检测人脸,各参数含义：scaleFactor：检测窗口缩小的比例，越小越慢；minNeighbors：最少需要检测到多少个窗口内的目标；minSize：目标的最小尺寸；maxSize：目标的最大尺寸
+    rects = cascade.detectMultiScale(im, 1.3, 5) # 检测人脸,各参数含义：scaleFactor：检测窗口缩小的比例，越小越慢；minNeighbors：最少需要检测到多少个窗口内的目标；minSize：目标的最小尺寸；maxSize：目标的最大尺寸
     x,y,w,h = rects[0] # 取第一个人脸的坐标,各坐标含义：x,y为左上角坐标，w,h为宽和高
-    rect = dlib.rectangle((x,y), (x+w,y+h)) # 转换成dlib格式
+    rect = dlib.rectangle(x, y, x+w, y+h) # 转换成dlib格式
     print('end get_landmarks')
     return np.matrix([[p.x, p.y] for p in predictor(im, rect).parts()]) # 68个特征点坐标
 
@@ -51,7 +51,7 @@ def get_lip_image(im, landmarks):
 
     print('end get_lip_image')
     # 返回截取局部特征后的图片
-    return im[ymin-diff_height//2:ymax+diff_height//2,xmin-diff_width//2:xmax+diff_width//2,0:3]
+    return im[ymin-int(diff_height//2):ymax+int(diff_height//2),xmin-int(diff_width//2):xmax+int(diff_width//2),0:3]
 
 # 在原图上可视化关键点
 def visualize_landmarks(im, landmarks):
@@ -76,22 +76,20 @@ def process_dataset(dataset_path):
             fileid = f.split('.')[0]
             filetype = f.split('.')[1]
             filepath = os.path.join(root,f)
-            try:
-                im = cv2.imread(filepath,1) # 读取图片,参数1表示读取3通道彩色图片
-                os.remove(filepath)
-                landmarks = get_landmarks(im) # 提取特征点
-                show_landmarks = visualize_landmarks(im, landmarks) # 可视化特征点
-                roi_image = get_lip_image(im, landmarks) # 提取嘴部局部特征图片
-                roi_path = filepath.replace('.' + filetype,'_mouth.png')
-                if '0003' in fileid:
-                    cv2.imshow('keypoints', show_landmarks) # 显示局部特征图片
-                    cv2.waitKey(0) # 等待按键
+            print('f:' + filepath)
+            im = cv2.imread(filepath, 1) # 读取图片,参数1表示读取3通道彩色图片
+            os.remove(filepath)
+            landmarks = get_landmarks(im) # 提取特征点
+            show_landmarks = visualize_landmarks(im, landmarks) # 可视化特征点
+            roi_image = get_lip_image(im, landmarks) # 提取嘴部局部特征图片
+            roi_path = filepath.replace('.' + filetype,'_mouth.png')
+            if '0043' in fileid:
+                cv2.imshow('keypoints', show_landmarks) # 显示局部特征图片
+                cv2.waitKey(0) # 等待按键
 
-                cv2.imwrite(roi_path, roi_image)
-            except:
-                print('Error:', filepath)
-                continue
+            cv2.imwrite(roi_path, roi_image)
+
 
 if __name__ == '__main__':
-    dataset_path = 'source_data/du'
+    dataset_path = 'source_data'
     process_dataset(dataset_path)
