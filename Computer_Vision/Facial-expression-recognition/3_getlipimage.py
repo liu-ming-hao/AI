@@ -93,3 +93,4 @@ def process_dataset(dataset_path):
 if __name__ == '__main__':
     dataset_path = 'source_data'
     process_dataset(dataset_path)
+    print('Done!')
