@@ -104,7 +104,7 @@ for image_path in image_paths:
     if k == ord('q'):
         quit(0)
 
-
+#
 im = cv2.imread(sys.argv[2])
 predict = model(im)
 
