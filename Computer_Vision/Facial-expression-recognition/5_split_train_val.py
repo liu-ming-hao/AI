@@ -31,5 +31,5 @@ def split_train_val(file_dir, train_ratio=0.9):
 
 
 if __name__ == '__main__':
-    split_train_val('0.txt')
-    split_train_val('1.txt')
+    split_train_val('source_data/txt/0.txt')
+    split_train_val('source_data/txt/1.txt')
