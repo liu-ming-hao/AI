@@ -73,6 +73,7 @@ if __name__ == '__main__':
 
     use_gpu = torch.cuda.is_available() # 判断是否有GPU
     if use_gpu:
+        print('use gpu===============================================')
         model = model.cuda() # 将模型放到GPU上
     print(model)
 
@@ -107,6 +108,6 @@ if __name__ == '__main__':
     optimizer = torch.optim.SGD(model.parameters(), lr=0.01, momentum=0.9) #随机梯度下降优化器 参数说明 ：model.parameters()表示需要优化的参数，lr表示学习率，momentum表示动量
     step_lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1) #学习率调度器，每隔10个epoch将学习率乘以0.1
 
-    model = train_model(model, criterion, optimizer, step_lr_scheduler, num_epochs=5) # 训练模型
+    model = train_model(model, criterion, optimizer, step_lr_scheduler, num_epochs=50) # 训练模型
 
     torch.save(model.state_dict(), 'models/model.pt') # 保存模型

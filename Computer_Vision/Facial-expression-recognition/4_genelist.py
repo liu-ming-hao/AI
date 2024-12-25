@@ -16,5 +16,5 @@ def list_files(rootDir, txtfile, label=0):
     print(rootDir + ' count: ' + str(count))
 
 if __name__ == '__main__':
-    list_files('source_data/du', '0.txt', 0)
-    list_files('source_data/smile', '1.txt', 1)
+    list_files('source_data/du', 'source_data/txt/0.txt', 0)
+    list_files('source_data/smile', 'source_data//txt/1.txt', 1)
