@@ -9,6 +9,15 @@ from model_choose import CVFacialExpressionModel # 导入模型
 from mouth_image_dataset import MouthImageDataset # 导入数据集
 from torch.utils.tensorboard import SummaryWriter # 导入tensorboard
 writer = SummaryWriter('runs') # 创建一个SummaryWriter对象，用于记录训练过程中的数据
+
+# 使用wandb记录训练过程
+import wandb
+import datetime
+run_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")     # 记录当前时间
+#wandb.init(project="facial-expression-recognition",name=run_time)
+
+
+import tqdm # 进度条
 #模型训练
 
 def train_model(model, criterion, optimizer, step_lr_scheduler, num_epochs=25):
@@ -25,7 +34,7 @@ def train_model(model, criterion, optimizer, step_lr_scheduler, num_epochs=25):
             running_accs = 0.0  # 准确率-精度
             number_batch = 0  # 批次
 
-            for data in dataloaders[phase]:
+            for data in tqdm.tqdm(dataloaders[phase]):
                 inputs, labels = data
                 if use_gpu:
                     inputs = inputs.cuda()
@@ -47,15 +56,25 @@ def train_model(model, criterion, optimizer, step_lr_scheduler, num_epochs=25):
             if phase == 'train':
                 writer.add_scalar('Loss/train', epoch_loss, epoch) # 记录训练损失
                 writer.add_scalar('Accuracy/train', epoch_accs, epoch) # 记录训练准确率
+
+                # wandb.log({'Loss': epoch_loss})
+                # wandb.log({'Accuracy': epoch_accs})
+
             else:
                 writer.add_scalar('Loss/val', epoch_loss, epoch) # 记录验证损失
                 writer.add_scalar('Accuracy/val', epoch_accs, epoch) # 记录验证准确率
+
+                # wandb.log({'Val_Loss': epoch_loss})
+                # wandb.log({'Val_Accuracy': epoch_accs})
 
             print('{} Loss: {:.4f} Acc: {:.4f}'.format(phase, epoch_loss, epoch_accs)) # 打印损失和准确
             if phase == 'train':
                 step_lr_scheduler.step() # 学习率调度器
 
+    for name, param in model.named_parameters():
+        writer.add_histogram(name, param.clone().cpu().data.numpy(), epoch) # 记录模型参数分布
     writer.close() # 关闭SummaryWriter
+    #wandb.finish() # 结束wandb记录
     return model
 
 if __name__ == '__main__':
@@ -76,6 +95,8 @@ if __name__ == '__main__':
         print('use gpu===============================================')
         model = model.cuda() # 将模型放到GPU上
     print(model)
+
+    #wandb.watch(model, log='all', log_graph=True)  # 监控模型训练过程
 
     ## TODO 预处理
     # 数据预处理 - 数据增强
@@ -108,6 +129,6 @@ if __name__ == '__main__':
     optimizer = torch.optim.SGD(model.parameters(), lr=0.01, momentum=0.9) #随机梯度下降优化器 参数说明 ：model.parameters()表示需要优化的参数，lr表示学习率，momentum表示动量
     step_lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1) #学习率调度器，每隔10个epoch将学习率乘以0.1
 
-    model = train_model(model, criterion, optimizer, step_lr_scheduler, num_epochs=50) # 训练模型
+    model = train_model(model, criterion, optimizer, step_lr_scheduler, num_epochs=10) # 训练模型
 
     torch.save(model.state_dict(), 'models/model.pt') # 保存模型
