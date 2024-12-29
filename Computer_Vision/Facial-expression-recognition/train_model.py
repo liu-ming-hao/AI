@@ -1,6 +1,7 @@
 import os
 from os import write
 
+
 import torch
 import torch.nn as nn
 from torchvision import transforms
@@ -77,8 +78,8 @@ def train_model(model, criterion, optimizer, step_lr_scheduler, num_epochs=25):
             if phase == 'train':
                 step_lr_scheduler.step() # 学习率调度器
 
-    for name, param in model.named_parameters():
-        writer.add_histogram(name, param.clone().cpu().data.numpy(), epoch) # 记录模型参数分布
+        for name, param in model.named_parameters():
+            writer.add_histogram(name, param.clone().cpu().data.numpy(), epoch) # 记录模型参数分布
     writer.close() # 关闭SummaryWriter
     wandb.finish() # 结束wandb记录
     return model
@@ -108,26 +109,38 @@ if __name__ == '__main__':
     # 数据预处理 - 数据增强
     data_transformers = {
         'train': transforms.Compose([
-            transforms.RandomResizedCrop(crop_size), # 随机裁剪
-            transforms.RandomHorizontalFlip(), # 随机水平翻转
-            transforms.RandomVerticalFlip(), # 随机垂直翻转
-            transforms.ToTensor(), # 转换为张量
-            transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]) # 归一化
+            transforms.RandomResizedCrop(crop_size), # 随机裁剪图像到指定大小crop_size，可以增强模型的尺度不变性
+            transforms.RandomHorizontalFlip(), # 随机水平翻转图像，概率为0.5，增加数据多样性
+            transforms.RandomVerticalFlip(), # 随机垂直翻转图像，概率为0.5，增加数据多样性
+            transforms.ToTensor(), # 将PIL图像或numpy.ndarray转换为tensor，并将像素值范围缩放到[0,1]
+            transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]) # 对图像进行标准化，将像素值标准化到[-1,1]区间，加速模型收敛
         ]),
         'val': transforms.Compose([
-            transforms.Resize(image_size), # 调整大小
-            transforms.CenterCrop(crop_size), # 中心裁剪
-            transforms.ToTensor(), # 转换为张量
-            transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]) # 归一化
+            transforms.Resize(image_size), # 将图像大小调整为指定的image_size，保持纵横比
+            transforms.CenterCrop(crop_size), # 从图像中心裁剪指定大小crop_size的区域，保证验证集的一致性
+            transforms.ToTensor(), # 将PIL图像或numpy.ndarray转换为tensor，并将像素值范围缩放到[0,1]
+            transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]) # 对图像进行标准化，将像素值标准化到[-1,1]区间，与训练集保持一致
         ]),
     }
 
-    ##  dataset
+    
+
+    # 创建训练集和验证集的图像数据集
+    # MouthImageDataset类用于加载和预处理图像数据
+    # data_dir中的txt文件包含图像路径和标签信息
+    # data_transformers对图像进行相应的数据增强和预处理
     image_datasets = {x: MouthImageDataset(os.path.join(data_dir, x + '.txt'), data_transformers.get(x)) for x in data_type}
-    ##  dataloader
+
+    # 创建数据加载器用于批量加载数据
+    # batch_size=16: 每批处理16张图像
+    # shuffle=True: 随机打乱数据顺序，增加训练的随机性
+    # num_workers=4: 使用4个子进程加载数据，加快数据加载速度
     dataloaders = {x: DataLoader(image_datasets[x], batch_size=16, shuffle=True, num_workers=4) for x in data_type}
 
-    dataset_sizes = {x: len(image_datasets[x]) for x in data_type} # 数据集大小
+    # 计算训练集和验证集的样本数量
+    # 用于后续计算每个epoch的迭代次数和准确率等指标
+    dataset_sizes = {x: len(image_datasets[x]) for x in data_type}
+
 
 
     #定义损失函数和优化器
